@@ -6,14 +6,15 @@ services:
         VITE_API_URL: ${VITE_API_URL:-}
     ports:
       - "3000:8080"
+    environment:
+      PORT: 8080
+      BACKEND_PROXY: http://backend:8001
     depends_on:
       - backend
     restart: unless-stopped
 
   backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    build: ./backend
     ports:
       - "8001:8001"
     env_file:

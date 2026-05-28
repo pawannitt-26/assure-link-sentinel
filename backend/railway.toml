@@ -1,0 +1,11 @@
+# Backend service — Railway Root Directory: backend
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+watchPatterns = ["src/**", "migrations/**", "package.json", "tsconfig.json"]
+
+[deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"

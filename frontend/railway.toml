@@ -1,0 +1,11 @@
+# Frontend service — Railway Root Directory: frontend
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+watchPatterns = ["src/**", "index.html", "package.json", "vite.config.ts", "tailwind.config.js", "postcss.config.js"]
+
+[deploy]
+healthcheckPath = "/"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"

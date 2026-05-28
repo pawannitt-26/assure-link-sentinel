@@ -1,7 +1,7 @@
 -- AssureLink Guardian — PostgreSQL schema (Railway / standard Postgres)
--- Run against Railway:
---   psql "$DATABASE_URL" -f db/migrations/001_init.sql
---   psql "$DATABASE_URL" -f db/migrations/002_seed.sql
+-- Auto-applied by the backend on startup, or run manually:
+--   psql "$DATABASE_URL" -f backend/migrations/001_init.sql
+--   psql "$DATABASE_URL" -f backend/migrations/002_seed.sql
 --
 -- Railway notes:
 --   * Uses standard PostgreSQL (pgcrypto is a built-in contrib extension)

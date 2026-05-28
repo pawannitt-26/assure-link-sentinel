@@ -8,8 +8,8 @@ const MIGRATIONS_TABLE = '_schema_migrations';
 function resolveMigrationsDir(): string {
   const candidates = [
     process.env.MIGRATIONS_DIR,
+    path.join(process.cwd(), 'migrations'),
     path.join(process.cwd(), 'db/migrations'),
-    path.join(process.cwd(), '../db/migrations'),
   ].filter((p): p is string => Boolean(p));
 
   for (const dir of candidates) {

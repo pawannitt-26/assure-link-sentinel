@@ -1,7 +1,7 @@
 -- Demo seed data for AssureLink Guardian (Railway / standard Postgres)
 -- Safe to re-run: uses fixed UUIDs with ON CONFLICT DO NOTHING
 -- Run after 001_init.sql:
---   psql "$DATABASE_URL" -f db/migrations/002_seed.sql
+--   psql "$DATABASE_URL" -f backend/migrations/002_seed.sql
 
 -- Partners
 INSERT INTO public.partners (id, first_name, last_name, email, company, compliance_status, risk_score, audit_status)

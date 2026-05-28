@@ -1,5 +1,5 @@
 server {
-    listen 8080;
+    listen ${PORT};
     root /usr/share/nginx/html;
     index index.html;
 
@@ -7,8 +7,9 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
+    # Used for local Docker Compose when VITE_API_URL is empty (browser calls /api)
     location /api {
-        proxy_pass http://backend:8001;
+        proxy_pass ${BACKEND_PROXY};
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
