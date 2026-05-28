@@ -1,0 +1,18 @@
+# Nagent — Buildcraft generated project
+# See https://nagent.ai (platform) — this file is for tooling and humans.
+
+version: "1"
+platform: nagent
+generator: buildcraft
+
+buildcraft:
+  watermark: "Generated using Buildcraft by Nagent"
+
+pipeline:
+  id: "6a14b381c42640d3db4cf66b"
+  name: "Application The Uploaded Agent Instructions Pipeline"
+
+stack:
+  frontend: "react"
+  backend: "fastify"
+  database: "postgresql"
