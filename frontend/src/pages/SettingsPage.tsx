@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import api from '../api/client'
 
 const INTEGRATIONS = [
   { id: 'zoho', name: 'Zoho CRM', desc: 'Partner records, contacts, custom fields', status: 'connected', accent: '#16a34a' },
@@ -7,13 +9,40 @@ const INTEGRATIONS = [
   { id: 'gemini', name: 'GeminiAI', desc: 'Compliance anomaly analysis & report generation', status: 'connected', accent: '#16a34a' },
 ]
 
+const THRESHOLD_KEY = 'compliance_threshold'
+
 export default function SettingsPage() {
   const navigate = useNavigate()
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const [user, setUser] = useState<{ fullName?: string; name?: string; email?: string; role?: string }>({})
+  const [threshold, setThreshold] = useState('standard')
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    try {
+      setUser(JSON.parse(localStorage.getItem('user') || '{}'))
+      setThreshold(localStorage.getItem(THRESHOLD_KEY) || 'standard')
+    } catch {
+      // ignore
+    }
+    api.get('/auth/me').then(res => {
+      const data = res.data?.data
+      if (data) {
+        setUser(data)
+        localStorage.setItem('user', JSON.stringify(data))
+      }
+    }).catch(() => {})
+  }, [])
+
   const logout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     navigate('/login')
+  }
+
+  const saveThreshold = () => {
+    localStorage.setItem(THRESHOLD_KEY, threshold)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
   }
 
   return (
@@ -23,9 +52,8 @@ export default function SettingsPage() {
       <div className="bg-white rounded-xl shadow-sm border p-5 mb-6">
         <h2 className="font-bold text-gray-900 mb-3">Account</h2>
         <div className="grid sm:grid-cols-2 gap-4 text-sm">
-          <div><p className="text-gray-500 text-xs">Name</p><p className="font-semibold text-gray-900">{user.name || 'Demo User'}</p></div>
-          <div><p className="text-gray-500 text-xs">Email</p><p className="font-semibold text-gray-900">{user.email || 'demo@example.com'}</p></div>
-          <div><p className="text-gray-500 text-xs">Role</p><p className="font-semibold text-gray-900">{user.role || 'compliance_officer'}</p></div>
+          <div><p className="text-gray-500 text-xs">Name</p><p className="font-semibold text-gray-900">{user.fullName || user.name || '—'}</p></div>
+          <div><p className="text-gray-500 text-xs">Email</p><p className="font-semibold text-gray-900">{user.email || '—'}</p></div>
         </div>
         <button onClick={logout} className="mt-4 bg-red-50 text-red-700 px-4 py-2 rounded-lg hover:bg-red-100 font-bold text-sm">Sign Out</button>
       </div>
@@ -45,14 +73,21 @@ export default function SettingsPage() {
             </div>
           ))}
         </div>
+        <p className="text-xs text-gray-400 mt-3">Integration connections are configured server-side.</p>
       </div>
       <div className="bg-white rounded-xl shadow-sm border p-5">
         <h2 className="font-bold text-gray-900 mb-3">Default Compliance Threshold</h2>
-        <select className="border rounded-lg px-3 py-2 bg-white">
-          <option>Strict — flag all minor deviations</option>
-          <option>Standard — flag moderate and above</option>
-          <option>Relaxed — flag only critical deviations</option>
-        </select>
+        <div className="flex gap-3 flex-wrap items-center">
+          <select value={threshold} onChange={e => setThreshold(e.target.value)} className="border rounded-lg px-3 py-2 bg-white flex-1 min-w-[200px]">
+            <option value="strict">Strict — flag all minor deviations</option>
+            <option value="standard">Standard — flag moderate and above</option>
+            <option value="relaxed">Relaxed — flag only critical deviations</option>
+          </select>
+          <button onClick={saveThreshold} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-bold text-sm">
+            {saved ? 'Saved!' : 'Save'}
+          </button>
+        </div>
+        <p className="text-xs text-gray-400 mt-2">Used as the default when starting new compliance runs.</p>
       </div>
     </div>
   )

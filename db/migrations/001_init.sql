@@ -1,12 +1,18 @@
--- AssureLink Guardian — Supabase-compatible initial schema
--- Run via Supabase SQL editor, supabase db push, or:
---   psql $DATABASE_URL < db/migrations/001_init.sql
+-- AssureLink Guardian — PostgreSQL schema (Railway / standard Postgres)
+-- Run against Railway:
+--   psql "$DATABASE_URL" -f db/migrations/001_init.sql
+--   psql "$DATABASE_URL" -f db/migrations/002_seed.sql
 --
--- Notes:
---   * UUID primary keys default to gen_random_uuid() (pgcrypto extension)
---   * Enum-like columns use TEXT + CHECK constraints (easier to evolve than PG enums)
---   * Row Level Security is enabled on every table; service_role bypasses RLS automatically
---   * Authenticated users get full access via permissive policies — tighten per product needs
+-- Railway notes:
+--   * Uses standard PostgreSQL (pgcrypto is a built-in contrib extension)
+--   * Connect with the DATABASE_URL from Railway → Postgres → Connect
+--   * SSL is handled by the connection string / psql automatically
+--   * RLS policies are optional; the backend connects as table owner and bypasses RLS
+--
+-- Schema notes:
+--   * UUID primary keys default to gen_random_uuid() (PG 13+ / pgcrypto)
+--   * Enum-like columns use TEXT + CHECK constraints
+--   * Safe to re-run: CREATE IF NOT EXISTS / ON CONFLICT DO NOTHING
 
 create extension if not exists pgcrypto;
 
@@ -178,8 +184,22 @@ create index if not exists idx_crm_update_type     on public.crm_update_logs(upd
 create index if not exists idx_crm_created_at      on public.crm_update_logs(created_at);
 
 -- ============================================================
--- Row Level Security
+-- Row Level Security (optional — for future Supabase/direct-client use)
+-- Backend on Railway connects as postgres table owner and bypasses RLS.
 -- ============================================================
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'authenticated') THEN
+    CREATE ROLE authenticated NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'service_role') THEN
+    CREATE ROLE service_role NOLOGIN BYPASSRLS;
+  END IF;
+EXCEPTION
+  WHEN insufficient_privilege THEN
+    RAISE NOTICE 'Skipping custom roles — not required for Railway backend access';
+END$$;
+
 alter table public.users               enable row level security;
 alter table public.partners            enable row level security;
 alter table public.compliance_runs     enable row level security;
@@ -188,10 +208,14 @@ alter table public.documents           enable row level security;
 alter table public.scheduled_reports   enable row level security;
 alter table public.crm_update_logs     enable row level security;
 
--- Permissive authenticated policies (the backend uses service_role and bypasses RLS).
--- Tighten these per-product as needed.
+-- Permissive authenticated policies (only if role exists).
+-- The Fastify backend uses direct pg access as table owner — not these roles.
 do $$
 begin
+  if not exists (select 1 from pg_roles where rolname = 'authenticated') then
+    raise notice 'Skipping RLS policies — authenticated role not present';
+    return;
+  end if;
   if not exists (select 1 from pg_policies where schemaname='public' and tablename='users' and policyname='users_auth_all') then
     create policy users_auth_all on public.users for all to authenticated using (true) with check (true);
   end if;

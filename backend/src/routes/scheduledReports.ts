@@ -1,7 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { scheduledReportService } from '../services/scheduledReportService';
-import { authenticate } from '../middleware/auth';
+import { scheduledReportService } from '../services/scheduledReportService.js';
+import { authenticate } from '../middleware/auth.js';
 
 const listQuery = z.object({
   page: z.coerce.number().int().positive().default(1),
@@ -51,20 +51,14 @@ const route: FastifyPluginAsync = async (app) => {
 
   app.post('/scheduled-reports', async (req, reply) => {
     const body = createSchema.parse(req.body);
-    const created = await scheduledReportService.create({
-      ...body,
-      nextExecutionAt: body.nextExecutionAt ? new Date(body.nextExecutionAt) : undefined,
-    });
+    const created = await scheduledReportService.create(body);
     reply.status(201).send({ success: true, data: created });
   });
 
   app.patch('/scheduled-reports/:id', async (req) => {
     const { id } = idParam.parse(req.params);
     const body = updateSchema.parse(req.body);
-    const updated = await scheduledReportService.update(id, {
-      ...body,
-      nextExecutionAt: body.nextExecutionAt ? new Date(body.nextExecutionAt) : undefined,
-    });
+    const updated = await scheduledReportService.update(id, body);
     return { success: true, data: updated };
   });
 

@@ -1,5 +1,5 @@
 import { FastifyPluginAsync } from 'fastify';
-import { supabase } from '../config/supabase.js';
+import { supabase } from '../config/postgres.js';
 
 const healthRoute: FastifyPluginAsync = async (app) => {
   app.get('/health', async () => {

@@ -2,13 +2,13 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci
+COPY backend/package.json ./
+RUN npm install
 
-COPY tsconfig.json ./
-COPY src ./src
+COPY backend/tsconfig.json ./
+COPY backend/src ./src
 
-RUN npx tsc
+RUN npm run build
 
 # Stage 2: Runtime
 FROM node:20-alpine AS runtime
@@ -19,14 +19,15 @@ ENV PORT=8001
 
 RUN apk add --no-cache wget
 
-COPY package*.json ./
-RUN npm ci --omit=dev
+COPY backend/package.json ./
+RUN npm install --omit=dev
 
 COPY --from=builder /app/dist ./dist
+COPY db/migrations ./db/migrations
 
 EXPOSE 8001
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD wget --quiet --tries=1 --spider http://localhost:8001/api/health || exit 1
 
 CMD ["node", "dist/server.js"]

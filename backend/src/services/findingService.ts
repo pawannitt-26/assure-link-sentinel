@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase.js';
+import { supabase } from '../config/postgres.js';
 import { NotFoundError } from '../utils/errors.js';
 
 export interface FindingInput {

@@ -1,51 +1,72 @@
-# JUST FOR TESTING
+# AssureLink Guardian
 
-# Full-Stack Application
+Compliance monitoring platform — React frontend + Fastify API + PostgreSQL.
 
 ## Project Structure
+
 ```
-├── frontend/        React + Vite + TypeScript
-├── backend/         Fastify + TypeScript API
-├── db/              Database migrations and seeds
+├── frontend/        React + Vite + TypeScript (Docker)
+├── backend/         Fastify + TypeScript API (Docker)
+├── db/migrations/   PostgreSQL schema + seed data (auto-applied on startup)
 ├── docker-compose.yml
 └── README.md
 ```
 
-## Quick Start (Docker)
+## Quick Start (Docker + Railway Postgres)
+
+### 1. Create a Postgres database on Railway
+
+In your [Railway](https://railway.app) project, add a **PostgreSQL** service and copy the **DATABASE_URL** from the Connect tab.
+
+### 2. Configure environment
+
 ```bash
-cp backend/.env.example backend/.env   # edit DB/JWT values
-docker-compose up --build
+cp .env.example .env
 ```
+
+Edit `.env` and set your Railway `DATABASE_URL` and a strong `JWT_SECRET`.
+
+### 3. Start frontend + backend in Docker
+
+```bash
+docker compose up --build
+```
+
+On first startup, the backend automatically runs SQL files from `db/migrations/` against your Railway database (schema + seed data).
+
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8001/api
 - Health: http://localhost:8001/api/health
 
-## Local Development
+**Demo login:** `demo@example.com` / `demo123`
 
-### Backend
+## Environment
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | Railway PostgreSQL connection string |
+| `JWT_SECRET` | Secret for signing auth tokens (min 16 chars) |
+| `RUN_MIGRATIONS` | Run `db/migrations/*.sql` on startup (default `true`) |
+| `FRONTEND_URL` | Allowed CORS origin (default `http://localhost:3000`) |
+| `VITE_API_URL` | Backend URL for the frontend (leave empty in Docker to use `/api`) |
+
+## Local Development (without Docker)
+
 ```bash
-cd backend
+cp backend/.env.example backend/.env   # set Railway DATABASE_URL
+cp frontend/.env.example frontend/.env
+
 npm install
-cp .env.example .env    # edit values
-npm run dev             # starts on port 8001
+npm run dev
 ```
 
-### Frontend
+Migrations run automatically when the backend starts (same as Docker).
+
+## Manual migrations (optional)
+
+Normally not needed — the backend handles this. To run manually:
+
 ```bash
-cd frontend
-npm install
-cp .env.example .env
-npm run dev             # starts on port 3000
+psql "$DATABASE_URL" -f db/migrations/001_init.sql
+psql "$DATABASE_URL" -f db/migrations/002_seed.sql
 ```
-
-## Database
-```bash
-# Run migrations (PostgreSQL)
-psql $DATABASE_URL < db/migrations/001_init.sql
-psql $DATABASE_URL < db/migrations/002_seed.sql
-```
-
-## Changelog
-
-- 2026-05-28T11:51:52.084Z — Pipeline `6a182c42da1c7df65114c103` (v1) stage `frontend_generator`
-  - Files generated/updated in this stage: 16

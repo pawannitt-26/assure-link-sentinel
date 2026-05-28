@@ -13,7 +13,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { logger } from './utils/logger.js';
 
 async function buildServer() {
-  const app = Fastify({ logger });
+  const app = Fastify({ logger: logger as import('fastify').FastifyBaseLogger });
 
   await app.register(cors, {
     origin: env.FRONTEND_URL,

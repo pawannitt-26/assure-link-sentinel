@@ -1,8 +1,8 @@
 # Stage 1: Build
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci
+COPY package.json ./
+RUN npm install
 COPY . .
 ARG VITE_API_URL=
 ARG VITE_BACKEND_URL=

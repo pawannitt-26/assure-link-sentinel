@@ -1,7 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { crmLogService } from '../services/crmLogService';
-import { authenticate } from '../middleware/auth';
+import { crmLogService } from '../services/crmLogService.js';
+import { authenticate } from '../middleware/auth.js';
 
 const listQuery = z.object({
   page: z.coerce.number().int().positive().default(1),
@@ -43,17 +43,14 @@ const route: FastifyPluginAsync = async (app) => {
 
   app.post('/crm-logs', async (req, reply) => {
     const body = createSchema.parse(req.body);
-    const created = await crmLogService.create(body);
+    const created = await crmLogService.create({ ...body, payload: body.payload ?? {} });
     reply.status(201).send({ success: true, data: created });
   });
 
   app.patch('/crm-logs/:id', async (req) => {
     const { id } = idParam.parse(req.params);
     const body = updateSchema.parse(req.body);
-    const updated = await crmLogService.update(id, {
-      ...body,
-      sentAt: body.sentAt ? new Date(body.sentAt) : undefined,
-    });
+    const updated = await crmLogService.update(id, body);
     return { success: true, data: updated };
   });
 

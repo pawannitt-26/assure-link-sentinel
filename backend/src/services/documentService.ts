@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase.js';
+import { supabase } from '../config/postgres.js';
 import { NotFoundError } from '../utils/errors.js';
 
 export interface DocumentInput {
@@ -44,7 +44,7 @@ export const documentService = {
 
     const { data, count, error } = await q;
     if (error) throw error;
-    return { items: (data || []).map(normalize), total: count || 0, page, perPage };
+    return { items: (Array.isArray(data) ? data : []).map(normalize), total: count || 0, page, perPage };
   },
 
   async getById(id: string) {

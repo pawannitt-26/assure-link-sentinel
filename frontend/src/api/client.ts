@@ -1,9 +1,5 @@
 import axios from 'axios'
 
-// Preview-safe: never reference import.meta at the top level. The App Preview
-// loads files as classic scripts in some sandbox modes, which makes the token
-// `import.meta` a SyntaxError before React can mount.
-
 function readEnv(key: string): string {
   try {
     const g: any = typeof globalThis !== 'undefined' ? globalThis : {}
@@ -15,13 +11,25 @@ function readEnv(key: string): string {
   } catch {
     // ignore
   }
+  try {
+    // Vite injects env at build time when available
+    const meta = (import.meta as any)?.env
+    if (meta && typeof meta[key] === 'string' && meta[key]) return meta[key]
+  } catch {
+    // ignore — preview sandbox
+  }
   return ''
 }
 
-const API_URL = readEnv('VITE_API_URL') || '/api'
+function resolveApiUrl(): string {
+  const raw = readEnv('VITE_API_URL')
+  if (!raw) return '/api'
+  const trimmed = raw.replace(/\/$/, '')
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`
+}
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: resolveApiUrl(),
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 })
@@ -42,10 +50,13 @@ api.interceptors.request.use(config => {
 api.interceptors.response.use(
   res => res,
   err => {
-    if (err && err.response && err.response.status === 401) {
+    if (err?.response?.status === 401) {
       try {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+          window.location.href = '/login'
+        }
       } catch {
         // ignore
       }
@@ -53,5 +64,13 @@ api.interceptors.response.use(
     return Promise.reject(err)
   },
 )
+
+export function apiErrorMessage(err: unknown, fallback = 'Something went wrong'): string {
+  if (axios.isAxiosError(err)) {
+    return err.response?.data?.error?.message || err.response?.data?.message || err.message || fallback
+  }
+  if (err instanceof Error) return err.message
+  return fallback
+}
 
 export default api
