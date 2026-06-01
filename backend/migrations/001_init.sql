@@ -184,7 +184,7 @@ create index if not exists idx_crm_update_type     on public.crm_update_logs(upd
 create index if not exists idx_crm_created_at      on public.crm_update_logs(created_at);
 
 -- ============================================================
--- Row Level Security (optional — for future Supabase/direct-client use)
+-- Row Level Security (optional — for future direct-client use)
 -- Backend on Railway connects as postgres table owner and bypasses RLS.
 -- ============================================================
 DO $$

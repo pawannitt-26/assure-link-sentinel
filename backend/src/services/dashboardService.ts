@@ -1,11 +1,13 @@
-import { supabase } from '../config/postgres.js';
+import { getDb } from '../config/postgres.js';
+
+const db = getDb();
 
 export const dashboardService = {
   async getStats() {
     const severities = ['critical', 'high', 'medium', 'low'] as const;
     const counts: Record<string, number> = {};
     for (const sev of severities) {
-      const { count, error } = await supabase
+      const { count, error } = await db
         .from('compliance_findings')
         .select('id', { count: 'exact', head: true })
         .eq('severity', sev);
@@ -13,7 +15,7 @@ export const dashboardService = {
       counts[sev] = count || 0;
     }
 
-    const { data: recentRuns, error: rErr } = await supabase
+    const { data: recentRuns, error: rErr } = await db
       .from('compliance_runs')
       .select('id, name, compliance_threshold, status, created_at, critical_count, high_count, medium_count, low_count')
       .order('created_at', { ascending: false })

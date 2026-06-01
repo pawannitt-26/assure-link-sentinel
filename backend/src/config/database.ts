@@ -28,4 +28,4 @@ export async function disconnectDatabase(): Promise<void> {
   await closePool();
 }
 
-export { getDb as supabase } from './postgres.js';
+export { getDb } from './postgres.js';

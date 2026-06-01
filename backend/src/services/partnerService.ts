@@ -1,4 +1,6 @@
-import { supabase } from '../config/postgres.js';
+import { getDb } from '../config/postgres.js';
+
+const db = getDb();
 import { NotFoundError } from '../utils/errors.js';
 
 export interface PartnerInput {
@@ -37,7 +39,7 @@ export const partnerService = {
     const from = (page - 1) * perPage;
     const to = from + perPage - 1;
 
-    let q = supabase.from('partners').select('*', { count: 'exact' }).order('created_at', { ascending: false });
+    let q = db.from('partners').select('*', { count: 'exact' }).order('created_at', { ascending: false });
     if (status) q = q.eq('compliance_status', status);
     if (search) {
       const s = `%${search}%`;
@@ -51,14 +53,14 @@ export const partnerService = {
   },
 
   async getById(id: string) {
-    const { data, error } = await supabase.from('partners').select('*').eq('id', id).maybeSingle();
+    const { data, error } = await db.from('partners').select('*').eq('id', id).maybeSingle();
     if (error) throw error;
     if (!data) throw new NotFoundError(`Partner ${id} not found`);
     return data;
   },
 
   async create(input: PartnerInput) {
-    const { data, error } = await supabase.from('partners').insert(toDb(input)).select('*').single();
+    const { data, error } = await db.from('partners').insert(toDb(input)).select('*').single();
     if (error) throw error;
     return data;
   },
@@ -66,14 +68,14 @@ export const partnerService = {
   async update(id: string, input: Partial<PartnerInput>) {
     await this.getById(id);
     const payload = { ...toDb(input), updated_at: new Date().toISOString() };
-    const { data, error } = await supabase.from('partners').update(payload).eq('id', id).select('*').single();
+    const { data, error } = await db.from('partners').update(payload).eq('id', id).select('*').single();
     if (error) throw error;
     return data;
   },
 
   async remove(id: string) {
     await this.getById(id);
-    const { error } = await supabase.from('partners').delete().eq('id', id);
+    const { error } = await db.from('partners').delete().eq('id', id);
     if (error) throw error;
     return { id };
   },

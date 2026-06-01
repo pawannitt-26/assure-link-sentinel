@@ -1,4 +1,6 @@
-import { supabase } from '../config/postgres.js';
+import { getDb } from '../config/postgres.js';
+
+const db = getDb();
 import { NotFoundError } from '../utils/errors.js';
 
 export interface CrmLogInput {
@@ -31,7 +33,7 @@ export const crmLogService = {
     const from = (page - 1) * perPage;
     const to = from + perPage - 1;
 
-    let q = supabase.from('crm_update_logs').select('*', { count: 'exact' }).order('created_at', { ascending: false });
+    let q = db.from('crm_update_logs').select('*', { count: 'exact' }).order('created_at', { ascending: false });
     if (partnerId) q = q.eq('partner_id', partnerId);
     if (status) q = q.eq('status', status);
     q = q.range(from, to);
@@ -42,14 +44,14 @@ export const crmLogService = {
   },
 
   async getById(id: string) {
-    const { data, error } = await supabase.from('crm_update_logs').select('*').eq('id', id).maybeSingle();
+    const { data, error } = await db.from('crm_update_logs').select('*').eq('id', id).maybeSingle();
     if (error) throw error;
     if (!data) throw new NotFoundError(`CRM log ${id} not found`);
     return data;
   },
 
   async create(input: CrmLogInput) {
-    const { data, error } = await supabase.from('crm_update_logs').insert(toDb(input)).select('*').single();
+    const { data, error } = await db.from('crm_update_logs').insert(toDb(input)).select('*').single();
     if (error) throw error;
     return data;
   },
@@ -57,7 +59,7 @@ export const crmLogService = {
   async update(id: string, input: Partial<CrmLogInput>) {
     await this.getById(id);
     const payload = { ...toDb(input), updated_at: new Date().toISOString() };
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('crm_update_logs')
       .update(payload)
       .eq('id', id)
@@ -69,7 +71,7 @@ export const crmLogService = {
 
   async remove(id: string) {
     await this.getById(id);
-    const { error } = await supabase.from('crm_update_logs').delete().eq('id', id);
+    const { error } = await db.from('crm_update_logs').delete().eq('id', id);
     if (error) throw error;
     return { id };
   },

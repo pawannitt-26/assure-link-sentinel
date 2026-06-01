@@ -1,7 +1,7 @@
 {
   "name": "assurelink-guardian-backend",
   "version": "1.0.0",
-  "description": "AssureLink Guardian - Compliance Monitoring Backend (Supabase)",
+  "description": "AssureLink Guardian - Compliance Monitoring Backend",
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",

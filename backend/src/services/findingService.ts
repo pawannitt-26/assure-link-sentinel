@@ -1,4 +1,6 @@
-import { supabase } from '../config/postgres.js';
+import { getDb } from '../config/postgres.js';
+
+const db = getDb();
 import { NotFoundError } from '../utils/errors.js';
 
 export interface FindingInput {
@@ -44,7 +46,7 @@ export const findingService = {
     const from = (page - 1) * perPage;
     const to = from + perPage - 1;
 
-    let q = supabase.from('compliance_findings').select('*', { count: 'exact' }).order('created_at', { ascending: false });
+    let q = db.from('compliance_findings').select('*', { count: 'exact' }).order('created_at', { ascending: false });
     if (severity) q = q.eq('severity', severity);
     if (status) q = q.eq('status', status);
     if (partnerId) q = q.eq('partner_id', partnerId);
@@ -57,14 +59,14 @@ export const findingService = {
   },
 
   async getById(id: string) {
-    const { data, error } = await supabase.from('compliance_findings').select('*').eq('id', id).maybeSingle();
+    const { data, error } = await db.from('compliance_findings').select('*').eq('id', id).maybeSingle();
     if (error) throw error;
     if (!data) throw new NotFoundError(`Finding ${id} not found`);
     return data;
   },
 
   async create(input: FindingInput) {
-    const { data, error } = await supabase.from('compliance_findings').insert(toDb(input)).select('*').single();
+    const { data, error } = await db.from('compliance_findings').insert(toDb(input)).select('*').single();
     if (error) throw error;
     return data;
   },
@@ -72,7 +74,7 @@ export const findingService = {
   async update(id: string, input: Partial<FindingInput>) {
     await this.getById(id);
     const payload = { ...toDb(input), updated_at: new Date().toISOString() };
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('compliance_findings')
       .update(payload)
       .eq('id', id)
@@ -84,7 +86,7 @@ export const findingService = {
 
   async remove(id: string) {
     await this.getById(id);
-    const { error } = await supabase.from('compliance_findings').delete().eq('id', id);
+    const { error } = await db.from('compliance_findings').delete().eq('id', id);
     if (error) throw error;
     return { id };
   },

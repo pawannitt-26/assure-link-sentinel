@@ -1,4 +1,6 @@
-import { supabase } from '../config/postgres.js';
+import { getDb } from '../config/postgres.js';
+
+const db = getDb();
 import { NotFoundError } from '../utils/errors.js';
 
 export interface DocumentInput {
@@ -38,7 +40,7 @@ export const documentService = {
     const from = (page - 1) * perPage;
     const to = from + perPage - 1;
 
-    let q = supabase.from('documents').select('*', { count: 'exact' }).order('uploaded_at', { ascending: false });
+    let q = db.from('documents').select('*', { count: 'exact' }).order('uploaded_at', { ascending: false });
     if (partnerId) q = q.eq('partner_id', partnerId);
     q = q.range(from, to);
 
@@ -48,14 +50,14 @@ export const documentService = {
   },
 
   async getById(id: string) {
-    const { data, error } = await supabase.from('documents').select('*').eq('id', id).maybeSingle();
+    const { data, error } = await db.from('documents').select('*').eq('id', id).maybeSingle();
     if (error) throw error;
     if (!data) throw new NotFoundError(`Document ${id} not found`);
     return normalize(data);
   },
 
   async create(input: DocumentInput) {
-    const { data, error } = await supabase.from('documents').insert(toDb(input)).select('*').single();
+    const { data, error } = await db.from('documents').insert(toDb(input)).select('*').single();
     if (error) throw error;
     return normalize(data);
   },
@@ -63,14 +65,14 @@ export const documentService = {
   async update(id: string, input: Partial<DocumentInput>) {
     await this.getById(id);
     const payload = { ...toDb(input), updated_at: new Date().toISOString() };
-    const { data, error } = await supabase.from('documents').update(payload).eq('id', id).select('*').single();
+    const { data, error } = await db.from('documents').update(payload).eq('id', id).select('*').single();
     if (error) throw error;
     return normalize(data);
   },
 
   async remove(id: string) {
     await this.getById(id);
-    const { error } = await supabase.from('documents').delete().eq('id', id);
+    const { error } = await db.from('documents').delete().eq('id', id);
     if (error) throw error;
     return { id };
   },

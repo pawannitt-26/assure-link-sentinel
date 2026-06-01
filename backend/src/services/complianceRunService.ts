@@ -1,4 +1,6 @@
-import { supabase } from '../config/postgres.js';
+import { getDb } from '../config/postgres.js';
+
+const db = getDb();
 import { NotFoundError } from '../utils/errors.js';
 
 export interface RunInput {
@@ -37,7 +39,7 @@ export const complianceRunService = {
     const from = (page - 1) * perPage;
     const to = from + perPage - 1;
 
-    let q = supabase.from('compliance_runs').select('*', { count: 'exact' }).order('created_at', { ascending: false });
+    let q = db.from('compliance_runs').select('*', { count: 'exact' }).order('created_at', { ascending: false });
     if (status) q = q.eq('status', status);
     q = q.range(from, to);
 
@@ -47,14 +49,14 @@ export const complianceRunService = {
   },
 
   async getById(id: string) {
-    const { data, error } = await supabase.from('compliance_runs').select('*').eq('id', id).maybeSingle();
+    const { data, error } = await db.from('compliance_runs').select('*').eq('id', id).maybeSingle();
     if (error) throw error;
     if (!data) throw new NotFoundError(`Compliance run ${id} not found`);
     return data;
   },
 
   async create(input: RunInput) {
-    const { data, error } = await supabase.from('compliance_runs').insert(toDb(input)).select('*').single();
+    const { data, error } = await db.from('compliance_runs').insert(toDb(input)).select('*').single();
     if (error) throw error;
     return data;
   },
@@ -62,14 +64,14 @@ export const complianceRunService = {
   async update(id: string, input: Partial<RunInput>) {
     await this.getById(id);
     const payload = { ...toDb(input), updated_at: new Date().toISOString() };
-    const { data, error } = await supabase.from('compliance_runs').update(payload).eq('id', id).select('*').single();
+    const { data, error } = await db.from('compliance_runs').update(payload).eq('id', id).select('*').single();
     if (error) throw error;
     return data;
   },
 
   async remove(id: string) {
     await this.getById(id);
-    const { error } = await supabase.from('compliance_runs').delete().eq('id', id);
+    const { error } = await db.from('compliance_runs').delete().eq('id', id);
     if (error) throw error;
     return { id };
   },

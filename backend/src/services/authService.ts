@@ -1,6 +1,8 @@
 import bcrypt from 'bcryptjs';
-import { supabase } from '../config/postgres.js';
+import { getDb } from '../config/postgres.js';
 import { UnauthorizedError, ConflictError, NotFoundError } from '../utils/errors.js';
+
+const db = getDb();
 
 export interface AuthUser {
   id: string;
@@ -11,7 +13,7 @@ export interface AuthUser {
 
 export const authService = {
   async login(email: string, password: string): Promise<AuthUser> {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('users')
       .select('id, email, password_hash, full_name, created_at')
       .eq('email', email.toLowerCase())
@@ -46,7 +48,7 @@ export const authService = {
   },
 
   async getById(id: string): Promise<AuthUser> {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('users')
       .select('id, email, full_name, created_at')
       .eq('id', id)
@@ -64,11 +66,11 @@ export const authService = {
 
   async register(email: string, password: string, fullName: string): Promise<AuthUser> {
     const lower = email.toLowerCase();
-    const { data: existing } = await supabase.from('users').select('id').eq('email', lower).maybeSingle();
+    const { data: existing } = await db.from('users').select('id').eq('email', lower).maybeSingle();
     if (existing) throw new ConflictError('Email already registered');
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('users')
       .insert({ email: lower, password_hash: passwordHash, full_name: fullName })
       .select('id, email, full_name, created_at')

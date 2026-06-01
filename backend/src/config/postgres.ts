@@ -33,9 +33,6 @@ export function getDb(): DbClient {
   return _db;
 }
 
-/** @deprecated Use getDb() — kept as alias for minimal service churn */
-export const supabase = getDb();
-
 export async function closePool(): Promise<void> {
   if (pool) {
     await pool.end();

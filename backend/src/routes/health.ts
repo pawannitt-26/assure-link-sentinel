@@ -1,11 +1,13 @@
 import { FastifyPluginAsync } from 'fastify';
-import { supabase } from '../config/postgres.js';
+import { getDb } from '../config/postgres.js';
+
+const db = getDb();
 
 const healthRoute: FastifyPluginAsync = async (app) => {
   app.get('/health', async () => {
     let database = 'connected';
     try {
-      const { error } = await supabase.from('users').select('id', { count: 'exact', head: true });
+      const { error } = await db.from('users').select('id', { count: 'exact', head: true });
       if (error && error.code !== 'PGRST116') database = 'degraded';
     } catch {
       database = 'disconnected';
