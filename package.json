@@ -1,16 +1,12 @@
 {
-  "name": "generated-app",
+  "name": "assure-link-sentinel",
   "version": "1.0.0",
   "private": true,
-  "workspaces": [
-    "frontend",
-    "backend"
-  ],
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=frontend\" \"npm run dev --workspace=backend\"",
-    "build": "npm run build --workspace=frontend && npm run build --workspace=backend",
-    "docker:up": "docker-compose up --build",
-    "docker:down": "docker-compose down"
+    "dev": "concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\"",
+    "build": "npm run build --prefix frontend && npm run build --prefix backend",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
   },
   "devDependencies": {
     "concurrently": "^9.0.0"

@@ -2,55 +2,44 @@
 
 Compliance monitoring platform — React frontend + Fastify API + PostgreSQL.
 
-Reference template for a **monorepo with two Railway services + managed Postgres**.
+Deployed on Railway as **three services**: `db` (Postgres), `api` (backend), `web` (frontend).
 
-## Project layout (conventions)
-
-Each deployable service is **self-contained** in its own directory:
+## Project layout
 
 ```
 assure-link-sentinel/
-├── backend/                 # API service (Railway Root Directory: backend)
-│   ├── Dockerfile           # Build context = this folder
-│   ├── railway.toml         # Railway config for backend service
-│   ├── migrations/          # SQL schema + seed (owned by backend)
-│   ├── src/
-│   └── package.json
-├── frontend/                # Static UI (Railway Root Directory: frontend)
+├── backend/                 # api service (Railway Root Directory: backend)
 │   ├── Dockerfile
 │   ├── railway.toml
-│   ├── nginx.conf.template
+│   ├── migrations/          # SQL schema + seed
+│   ├── package.json
+│   ├── package-lock.json
 │   └── src/
-├── docker-compose.yml       # Local dev only (frontend + backend)
-├── .env.example             # Local Docker env template
-└── package.json             # npm workspaces root
+├── frontend/                # web service (Railway Root Directory: frontend)
+│   ├── Dockerfile
+│   ├── railway.toml
+│   ├── nginx.conf           # static SPA only — no /api proxy
+│   ├── package.json
+│   ├── package-lock.json
+│   └── src/
+│       └── lib/api.ts       # VITE_API_URL helper (Strategy A)
+├── docker-compose.yml       # local dev only
+├── .env.example
+└── package.json             # npm workspaces (local dev)
 ```
 
-**Why not a root-level `railway.toml`?**
+## Railway deploy
 
-Railway resolves config from each service's **Root Directory**. Co-locating `railway.toml` + `Dockerfile` inside `backend/` and `frontend/` means:
+### 1. db — Postgres
 
-- Same pattern for every service
-- Docker build context stays inside the service folder (no `COPY ../` hacks)
-- Migrations live with the service that runs them
-- Easy to copy either folder as a starting point for new services
+Add the **PostgreSQL** plugin. Railway provides `DATABASE_URL`.
 
----
-
-## Deploy to Railway
-
-Create **one Railway project** with three services: **Postgres**, **Backend**, **Frontend**.
-
-### 1. Postgres
-
-Add the **PostgreSQL** template. Railway provides `DATABASE_URL`.
-
-### 2. Backend service
+### 2. api — Backend
 
 | Setting | Value |
 |---------|--------|
+| **Service name** | `api` |
 | **Root Directory** | `backend` |
-| **Config as code** | `backend/railway.toml` (auto-detected) |
 
 **Runtime variables:**
 
@@ -58,50 +47,50 @@ Add the **PostgreSQL** template. Railway provides `DATABASE_URL`.
 |----------|--------|
 | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
 | `JWT_SECRET` | long random string (16+ chars) |
-| `FRONTEND_URL` | `https://<your-frontend>.up.railway.app` |
+| `FRONTEND_URL` | `https://<web>.up.railway.app` |
+| `CORS_ORIGINS` | `https://<web>.up.railway.app` |
 | `RUN_MIGRATIONS` | `true` |
+| `PORT` | `8080` |
 | `NODE_ENV` | `production` |
 
-Generate a **public domain** → e.g. `https://assurelink-api.up.railway.app`
+Health check: `GET /api/health`
 
-Migrations in `backend/migrations/` run automatically on startup.
-
-### 3. Frontend service
+### 3. web — Frontend
 
 | Setting | Value |
 |---------|--------|
+| **Service name** | `web` |
 | **Root Directory** | `frontend` |
-| **Config as code** | `frontend/railway.toml` (auto-detected) |
 
 **Build variable** (enable **Available at Build Time**):
 
 | Variable | Value |
 |----------|--------|
-| `VITE_API_URL` | `https://<your-backend>.up.railway.app` |
+| `VITE_API_URL` | `https://<api>.up.railway.app` |
 
-Generate a **public domain** for the frontend.
+The frontend calls the API via `VITE_API_URL` only — nginx serves static files on port 8080 with no `/api` proxy.
 
 ### 4. CORS
 
-Set backend `FRONTEND_URL` to the exact frontend URL, then redeploy backend.
+Set `CORS_ORIGINS` and `FRONTEND_URL` on **api** to the exact **web** URL, then redeploy api.
 
 ### 5. Verify
 
-- `https://<backend>/api/health`
-- `https://<frontend>/` → login with `demo@example.com` / `demo123`
+- `https://<api>/api/health`
+- `https://<web>/` → login with `demo@example.com` / `demo123`
 
 ---
 
-## Local Docker (Railway Postgres)
+## Local Docker Compose
 
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
 
-- Frontend: http://localhost:3000 (nginx proxies `/api` → backend)
-- Backend: http://localhost:8001/api
-- Leave `VITE_API_URL` empty in `.env`
+- **web**: http://localhost:5173
+- **api**: http://localhost:8080/api
+- `VITE_API_URL=http://localhost:8080` is passed at web build time
 
 ---
 
@@ -109,10 +98,13 @@ docker compose up --build
 
 ```bash
 cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
+cp frontend/.env.example frontend/.env   # optional; omit VITE_API_URL to use Vite proxy
 npm install
 npm run dev
 ```
+
+- **web** (Vite): http://localhost:5173 — proxies `/api` → http://localhost:8080
+- **api**: http://localhost:8080/api
 
 ---
 
@@ -120,12 +112,14 @@ npm run dev
 
 | Variable | Service | When | Description |
 |----------|---------|------|-------------|
-| `DATABASE_URL` | Backend | Runtime | PostgreSQL connection string |
-| `JWT_SECRET` | Backend | Runtime | Auth token secret |
-| `FRONTEND_URL` | Backend | Runtime | CORS origin (frontend URL) |
-| `RUN_MIGRATIONS` | Backend | Runtime | Auto-run `backend/migrations/*.sql` |
-| `VITE_API_URL` | Frontend | Build | Backend public URL (Railway). Empty for local Docker. |
-| `BACKEND_PROXY` | Frontend | Runtime | Docker Compose only (`http://backend:8001`) |
+| `DATABASE_URL` | api | Runtime | PostgreSQL connection string |
+| `JWT_SECRET` | api | Runtime | Auth token secret |
+| `FRONTEND_URL` | api | Runtime | Web public URL |
+| `CORS_ORIGINS` | api | Runtime | Allowed CORS origins (comma-separated) |
+| `PORT` | api | Runtime | Listen port (default `8080`) |
+| `HOST` | api | Runtime | Bind address (default `0.0.0.0`) |
+| `RUN_MIGRATIONS` | api | Runtime | Auto-run `backend/migrations/*.sql` |
+| `VITE_API_URL` | web | Build | API public URL (required on Railway) |
 
 ---
 

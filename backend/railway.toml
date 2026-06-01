@@ -3,7 +3,7 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
-watchPatterns = ["src/**", "migrations/**", "package.json", "tsconfig.json"]
+watchPatterns = ["src/**", "migrations/**", "package.json", "package-lock.json", "tsconfig.json"]
 
 [deploy]
 healthcheckPath = "/api/health"

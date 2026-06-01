@@ -1,45 +1,20 @@
 import axios from 'axios'
-
-function readEnv(key: string): string {
-  try {
-    const g: any = typeof globalThis !== 'undefined' ? globalThis : {}
-    if (g && g.__ENV__ && typeof g.__ENV__[key] === 'string') return g.__ENV__[key]
-    if (typeof window !== 'undefined') {
-      const w: any = window
-      if (w.__ENV__ && typeof w.__ENV__[key] === 'string') return w.__ENV__[key]
-    }
-  } catch {
-    // ignore
-  }
-  try {
-    // Vite injects env at build time when available
-    const meta = (import.meta as any)?.env
-    if (meta && typeof meta[key] === 'string' && meta[key]) return meta[key]
-  } catch {
-    // ignore — preview sandbox
-  }
-  return ''
-}
-
-function resolveApiUrl(): string {
-  const raw = readEnv('VITE_API_URL')
-  if (!raw) return '/api'
-  const trimmed = raw.replace(/\/$/, '')
-  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`
-}
+import { apiUrl } from '../lib/api'
 
 const api = axios.create({
-  baseURL: resolveApiUrl(),
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 })
 
 api.interceptors.request.use(config => {
+  if (config.url) {
+    config.url = apiUrl(config.url)
+  }
   try {
     const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null
     if (token) {
       config.headers = config.headers || {}
-      ;(config.headers as any).Authorization = 'Bearer ' + token
+      ;(config.headers as Record<string, string>).Authorization = 'Bearer ' + token
     }
   } catch {
     // ignore

@@ -6,7 +6,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
-import { env } from './config/env.js';
+import { env, parseCorsOrigins } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
 import { registerRoutes } from './routes/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -16,7 +16,7 @@ async function buildServer() {
   const app = Fastify({ logger: logger as import('fastify').FastifyBaseLogger });
 
   await app.register(cors, {
-    origin: env.FRONTEND_URL,
+    origin: parseCorsOrigins(env.CORS_ORIGINS),
     credentials: true,
   });
   await app.register(helmet, { contentSecurityPolicy: false });

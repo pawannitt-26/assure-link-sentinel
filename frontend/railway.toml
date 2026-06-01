@@ -3,7 +3,7 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
-watchPatterns = ["src/**", "index.html", "package.json", "vite.config.ts", "tailwind.config.js", "postcss.config.js"]
+watchPatterns = ["src/**", "index.html", "package.json", "package-lock.json", "vite.config.ts", "tailwind.config.js", "postcss.config.js", "nginx.conf"]
 
 [deploy]
 healthcheckPath = "/"
